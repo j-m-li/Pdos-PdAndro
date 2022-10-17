@@ -7,17 +7,22 @@
         <script src="main.js"></script>
         <link rel="stylesheet" href="styles.css">
     </head>
-    <body id="b" contenteditable="true" style="font-family:monospace; white-space:pre;">
-        Started...
-
+    <body>
+        <div id="t"  class="text"></div>
+        <div contenteditable="true" id="b" class="box"></div>
     </body>
     <script>
+    var elo = document.getElementById('t');
+    elo.addEventListener("focus", _onFocus, true);
     var elo = document.getElementById('b');
-    elo.addEventListener("input", function(ev) {window.Android.onInput(ev.data.toString()); ev.preventDefault();return false;}, true);
-     elo.addEventListener("keydown", function(ev) {window.Android.onKey(ev.keyCode); ev.preventDefault();return false;}, true);
-  elo.addEventListener("keyup", function(ev) {window.Android.onKey(ev.keyCode); ev.preventDefault();return false;}, true);
+    elo.addEventListener("blur", _onBlur, true);
+
+    elo.addEventListener("input", _onInput,true);
+    elo.addEventListener("textinput", _onTextInput,true);
+     elo.addEventListener("keydown", _onKeyDown, true);
+  elo.addEventListener("keyup", _onKeyUp, true);
 //elo.addEventListener("keypress", function(ev) {window.Android.onInput(ev.keyCode.toString()); ev.preventDefault();return false;}, true);
-elo.addEventListener("beforeinput", function(ev) {window.Android.onInput(ev.data.toString() ); ev.preventDefault();return false;}, true);
+elo.addEventListener("beforeinput", _onBeforeInput, true);
 
     </script>
 </html>

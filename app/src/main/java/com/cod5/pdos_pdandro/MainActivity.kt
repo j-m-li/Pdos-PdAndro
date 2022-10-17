@@ -1,3 +1,6 @@
+/*
+ * The authors disclam copyright to this source code
+ */
 package com.cod5.pdos_pdandro
 
 import android.content.Context
@@ -33,13 +36,12 @@ class MainActivity : AppCompatActivity() {
 
                     val cmd = "javascript:addtxt("
                     val s = String(b)
-                    val cm = "$cmd '$s');"
+                    val s1 = s.replace("\n", "\\n")
+                    val s2 = s1.replace("'", "\\'")
+                    val cm = "$cmd '$s2');"
                     if (t > 0) {
                         binding.gui.loadUrl(cm)
                     }
-                    //wri.append("jml")
-                    //wri.flush()
-
                 } catch (e: Exception) {
                     binding.gui.loadData("Error reading stream", "text/html", "UTF-8")
                 }
@@ -50,13 +52,11 @@ class MainActivity : AppCompatActivity() {
         }.start()
     }
 
-
     class MyJavascriptInterface(private val self: MainActivity) {
 
         @JavascriptInterface
         fun onInput(mes: String?): Boolean  {
             self.wri.append(mes)
-            //self.wri.append("----")
             self.wri.flush()
             return true
         }
@@ -64,9 +64,11 @@ class MainActivity : AppCompatActivity() {
         @JavascriptInterface
         fun onKey(mes: Int): Boolean  {
             if (mes == 13) {
-                self.wri.append("\n")
+                // self.wri.append("\n")
+            } else {
+                //self.wri.append(mes.toString())
+                return false
             }
-            //self.wri.append("----")
             self.wri.flush()
             return true
         }
@@ -77,7 +79,7 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         //supportActionBar?.hide()
-       binding.gui.requestFocus()
+        binding.gui.requestFocus()
         run()
         timer();
 
@@ -85,9 +87,9 @@ class MainActivity : AppCompatActivity() {
 
         binding.gui.addJavascriptInterface(MyJavascriptInterface(this), "Android")
 
-        // val imm: InputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+       //  val imm: InputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
        // imm.showSoftInput(binding.root,1)
-        //imm.hideSoftInputFromWindow(binding.gui.getWindowToken(), 0);
+       // imm.hideSoftInputFromWindow(binding.gui.getWindowToken(), 0);
     }
 
     fun run() {
@@ -96,6 +98,15 @@ class MainActivity : AppCompatActivity() {
         val s = applicationContext.applicationInfo.nativeLibraryDir
         val p = applicationContext.applicationInfo.dataDir
 
+        try {
+            val bin = "$p/bin"
+            Os.symlink(s, bin);
+            //val opath = Os.getenv("PATH");
+            //Os.setenv("PATH", path, true)
+        } catch (e:Exception)
+        {
+
+        }
         val c = "$s/libpdos.so"
         val dir = File(p);
         c.runCommand(dir)
