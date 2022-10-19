@@ -19,6 +19,9 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:screenOrientation="landscape"
+
+            android:windowSoftInputMode="stateAlwaysHidden"
             >
             <!--android:windowSoftInputMode="stateVisible|adjustResize" -->
 

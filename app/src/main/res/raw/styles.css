@@ -1,7 +1,11 @@
 
-div {white-space: pre-wrap;}
+div.text > div {white-space: normal;}
 body {
     margin: 0 0 0 0;
+    margin : 5px;
+    max-width: 100vw;
+    max-height: 100vh;
+    overflow: hidden;
 }
 .box {
     position: absolute;
@@ -10,12 +14,19 @@ body {
     z-index: 2;
 
     display: block;
+
     width: 100%;
     height: 100vh;
+
     border: 0 0 0 0;
     white-space: pre;
-    color: red;
-    //visibility: hidden;
+    line-height: 0;
+    color: transparent;
+    cursor: none;
+    /*visibility: hidden;*/
+     max-width: 100vw;
+     max-height: 100vh;
+     overflow: hidden;
 }
 
 .text {
@@ -23,9 +34,17 @@ body {
     left: 0px;
     top: 0px;
     z-index: -1;*/
+    /*padding: 5px;
+    padding-bottom: 0px;*/
     font-family:monospace;
-    white-space:pre-warp;
-    width: 100%;
-    height: 100vh;
-    overflow: scroll;
+    /*white-space:pre;*/
+
+
+    max-width: 100vw;
+    max-height: 100vh;
+    width: auto;
+   /* font-size: 1vmax;*/
+    font-size : 5pt;
+    overflow: hidden;
+    /*overflow: scroll;*/
  }

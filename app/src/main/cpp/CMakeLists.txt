@@ -11,3 +11,8 @@ add_executable(
         libls.so
 
         ls.c)
+
+add_executable(libtest.so
+        IMPORTED
+        )
+
