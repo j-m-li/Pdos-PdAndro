@@ -11,6 +11,8 @@
 #include <string.h>
 #include <errno.h>
 
+static int new_mode;
+static int old_mode;
 void printenv()
 {
     char **env;
@@ -34,6 +36,7 @@ int run(char *cmd)
     args[0] = cmd;
     args[1] = NULL;
 
+    fcntl(stdin, F_SETFL, old_mode);
     pid = fork();
     in = dup(0);
     out = dup(1);
@@ -44,6 +47,7 @@ int run(char *cmd)
         waitpid(pid, &status, 0);
         dup2(in, 0);
         dup2(out, 1);
+        fcntl(stdin, F_SETFL, new_mode);
    }
 
     return status;
@@ -90,7 +94,9 @@ int main(int argc, char *argv[])
         write(STDOUT_FILENO, argv[1], strlen(argv[1]));
     }
     write(STDOUT_FILENO, "\nprompt> ", 8);
-    fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK);
+    old_mode = fcntl(fd, F_GETFL);
+    new_mode = old_mode | O_NONBLOCK;
+    fcntl(fd, F_SETFL, new_mode);
 
     //printenv();
 
@@ -119,6 +125,9 @@ int main(int argc, char *argv[])
                             run(cmd);
                         } else if (!strcmp(cmd, "test1")) {
                             snprintf(cmd, sizeof(cmd), argv[1], "test1");
+                            run(cmd);
+                        } else if (!strcmp(cmd, "test2")) {
+                            snprintf(cmd, sizeof(cmd), argv[1], "test2");
                             run(cmd);
                         } else {
                             run(cmd);
