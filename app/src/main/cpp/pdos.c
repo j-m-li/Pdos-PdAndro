@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
                         if (!strcmp(cmd, "exit")) {
                             exit(0);
                         } else if (!strcmp(cmd, "echo")) {
-                            prompt = "\x1b[A\r\x1b[K\x1b[1;32mopened \x1b[1;4;34m%s\x1b[0;1;32m in your browser.\x1b[0m\n";
+                            prompt = "\x1b[A\r\x1b[K\x1b[1;32mopened \x1b[1;4;34m%s\x1b[0;1;32m in your browser.\x1b[0m\n\x1b[1;1H";
                             write(STDOUT_FILENO, prompt, strlen(prompt));
                         } else if (!strcmp(cmd, "LS")) {
                             snprintf(cmd, sizeof(cmd), argv[1], "ls");

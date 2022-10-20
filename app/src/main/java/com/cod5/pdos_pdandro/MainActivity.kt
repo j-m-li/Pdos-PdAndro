@@ -7,35 +7,17 @@ import android.graphics.*
 import android.os.Bundle
 import android.os.Handler
 import android.system.Os
-import android.system.Os.*
 import android.util.DisplayMetrics
 import android.view.KeyEvent
-import android.webkit.JavascriptInterface
 import androidx.appcompat.app.AppCompatActivity
 import com.cod5.pdos_pdandro.databinding.ActivityMainBinding
 import java.io.File
 import java.io.IOException
 import java.io.OutputStreamWriter
 import java.util.*
-import java.util.Base64.*
+import kotlin.math.ceil
+import kotlin.math.floor
 
-class ScreenChar(str: String) {
-    public var txt = str
-}
-
-class ScreenRow () {
-    public var col = arrayListOf<ScreenChar>()
-    init {
-        var i = 0;
-        while (i < 80) {
-            col.add(ScreenChar(" "))
-            i++
-        }
-    }
-    operator fun get(j: Int): ScreenChar {
-        return col[j]
-    }
-}
 class MainActivity : AppCompatActivity() {
 
     lateinit var binding: ActivityMainBinding
@@ -48,10 +30,33 @@ class MainActivity : AppCompatActivity() {
     private var rows = arrayListOf<ScreenRow>()
     private var cur_col = 0
     private var cur_row = 0
+    private var escape_state = 0
+    private var escape_sb = StringBuilder()
+    private var escape_args = arrayListOf<Int>()
 
     private lateinit var proc: Process
     lateinit var wri: OutputStreamWriter
     var input_buf = ""
+
+    class ScreenChar(str: String) {
+        public var txt = str
+        public var color = Color.BLACK
+        public var bgcolor = Color.WHITE
+    }
+
+    class ScreenRow (nbcol: Int) {
+        public var col = arrayListOf<ScreenChar>()
+        init {
+            var i = 0;
+            while (i < nbcol) {
+                col.add(ScreenChar(" "))
+                i++
+            }
+        }
+        operator fun get(j: Int): ScreenChar {
+            return col[j]
+        }
+    }
 
     fun write_buf() {
         try {
@@ -128,21 +133,14 @@ class MainActivity : AppCompatActivity() {
 
     fun init_display()
     {
-        // Getting the current window dimensions
-
         val dm = DisplayMetrics()
         windowManager.defaultDisplay.getMetrics(dm)
         var dw = dm.widthPixels - 2 * margin
         var dh = dm.heightPixels - 2 * margin
 
-        // Creating a bitmap with fetched dimensions
         bitmap = Bitmap.createBitmap(dw, dh, Bitmap.Config.ARGB_8888)
-
-        // Storing the canvas on the bitmap
         canvas = Canvas(bitmap)
 
-        // Initializing Paint to determine
-        // stoke attributes like color and size
         paint = Paint()
         paint.color = Color.BLACK
         paint.strokeWidth = 0F
@@ -158,44 +156,68 @@ class MainActivity : AppCompatActivity() {
             } else {
                 paint.textSize -= add
                 if (add == 1.0F) {
-                    add = 0.1F
+                    add = 0.5F
+                } else if (add == 0.5F) {
+                    add = 0.125F
                 } else {
                     h = dh.toFloat() + 1.0F
                 }
             }
         }
 
-        // Setting the bitmap on ImageView
         binding.imageView?.setImageBitmap(bitmap)
         line_height = paint.fontMetrics.descent - paint.fontMetrics.ascent
         glyph_width = paint.measureText("_");
 
         var i = 0
         while (i < 25) {
-            rows.add(ScreenRow());
+            rows.add(ScreenRow(80));
             i++
         }
     }
 
-    fun draw() {
+    fun draw(draw_all: Boolean) {
         var i = 0
-        var y = margin.toFloat() - paint.fontMetrics.descent
-        paint.color = Color.WHITE
-        canvas.drawRect(margin.toFloat(), margin.toFloat(),
-            (margin + bitmap.width).toFloat(),
-            (margin + bitmap.height).toFloat(), paint)
+        var y = margin.toFloat() - paint.fontMetrics.ascent
+        var ascent = paint.fontMetrics.ascent
+        /*paint.color = Color.YELLOW
+        canvas.drawRect(0F, 0F,
+            (bitmap.width).toFloat(),
+            (bitmap.height).toFloat(), paint)*/
+
         paint.color = Color.BLACK
         while (i < 25) {
             var j = 0;
             val r = rows[i]
             var x = margin.toFloat()
-            y += line_height;
-            while (j < 80) {
-                val col = r[j]
-                canvas.drawText(col.txt, x, y, paint)
-                x += glyph_width
-                j++
+            if (draw_all || i == cur_row) {
+                while (j < 80) {
+                    val col = r[j]
+                    paint.color = col.bgcolor
+                    canvas.drawRect(RectF(x, y + ascent, x + glyph_width, ceil(y + ascent + line_height)), paint)
+                    x += glyph_width
+                    j++
+                }
             }
+            y += line_height;
+            i++
+        }
+        i = 0
+        y = margin.toFloat() - paint.fontMetrics.ascent
+        while (i < 25) {
+            var j = 0
+            val r = rows[i]
+            var x = margin.toFloat()
+            if (draw_all || i == cur_row) {
+                while (j < 80) {
+                    val col = r[j]
+                    paint.color = col.color
+                    canvas.drawText(col.txt, x, y, paint)
+                    x += glyph_width
+                    j++
+                }
+            }
+            y += line_height;
             i++
         }
         binding.imageView?.invalidate()
@@ -209,13 +231,62 @@ class MainActivity : AppCompatActivity() {
         }
         i = 0
         while (i < amount) {
-            rows.add(ScreenRow());
+            rows.add(ScreenRow(80));
             i++
+        }
+    }
+
+    fun vt100(c: Int) {
+        // https://notes.burke.libbey.me/ansi-escape-codes/
+        if (c == 'A'.code) {
+            if (escape_args.size > 0) {
+                cur_row -= escape_args[0]
+            }
+        } else if (c == 'B'.code) {
+            if (escape_args.size > 0) {
+                cur_row += escape_args[0]
+            }
+        } else if (c == 'C'.code) {
+            if (escape_args.size > 0) {
+                cur_col += escape_args[0]
+            }
+        } else if (c == 'D'.code) {
+            if (escape_args.size > 0) {
+                cur_col -= escape_args[0]
+            }
+        } else if (c == 'E'.code) {
+            if (escape_args.size > 0) {
+                cur_row += escape_args[0]
+                cur_col = 0;
+            }
+        } else if (c == 'F'.code) {
+            if (escape_args.size > 0) {
+                cur_row -= escape_args[0]
+                cur_col = 0;
+            }
+        } else if (c == 'G'.code || c == 'f'.code) {
+            if (escape_args.size > 0) {
+                cur_col = escape_args[0] - 1
+            }
+        } else if (c == 'H'.code) {
+            if (escape_args.size > 1) {
+                cur_row = escape_args[0] - 1
+                cur_col = escape_args[1] - 1
+            }
+        } else if (c == 'J'.code) {
+        } else if (c == 'K'.code) {
+        } else if (c == 'S'.code) {
+        } else if (c == 'T'.code) {
+        } else if (c == 's'.code) {
+        } else if (c == 'u'.code) {
+        } else if (c == 'm'.code) {
+
         }
     }
 
     fun addtxt(txt: String) {
         var i = 0
+        var all = false
         val nbcp = txt.codePointCount(0, txt.length)
         var row = rows[cur_row]
         var col = row[cur_col]
@@ -223,27 +294,53 @@ class MainActivity : AppCompatActivity() {
         var last_col = cur_col
         while (i < nbcp) {
             var c = txt.codePointAt(i)
-            if (c == 10) {
+            if (escape_state == 1) {
+                // https://notes.burke.libbey.me/ansi-escape-codes/
+                if (c == '['.code) {
+                    escape_state = 2;
+                    escape_sb.clear()
+                    escape_args.clear()
+                } else {
+                    escape_state = 0;
+                    i-- // rescan the current character
+                }
+            } else if (escape_state == 2) {
+                if (c >= '0'.code && c <= '9'.code) {
+                    escape_sb.appendCodePoint(c)
+                } else if (c == ';'.code) {
+                    try {
+                        escape_args.add(escape_sb.toString().toInt())
+                    } catch(e: Exception) {
+                        escape_args.add(0)
+                    }
+                    escape_sb.clear()
+                } else {
+                    try {
+                        escape_args.add(escape_sb.toString().toInt())
+                        escape_sb.clear()
+                    } catch(e: Exception) {
+                    }
+                    vt100(c)
+                    all = true
+                    escape_state = 0
+                }
+            } else if (c == 10) { // \n
                 cur_row++;
                 cur_col = 0;
-            } else if (c == 13) {
+            } else if (c == 13) { // \r
                 //el.cur_col = 0;
             } else if (c == 8) {
                 if (cur_col > 0) {
                     cur_col--;
+                    col.txt = ""
                 }
-            } else if (c == 0x1B) {
-                // https://notes.burke.libbey.me/ansi-escape-codes/
-                /* TODO */
+            } else if (c == 0x1B) { // ESC
+                escape_state = 1;
             } else {
-                if (c == 32) {
-                    c = 0xA0;
-                }
                 val sb = StringBuilder()
                 sb.appendCodePoint(c)
                 col.txt = sb.toString()
                 cur_col++;
-                //vt100(el, c, col);
             }
             if (cur_col >= 80) {
                 cur_col = 0;
@@ -255,6 +352,7 @@ class MainActivity : AppCompatActivity() {
                 last_row = -1;
             }
             if (last_row != cur_row) {
+                all = true
                 row = rows[cur_row];
                 col = row[cur_col];
                 last_row = cur_row;
@@ -263,10 +361,9 @@ class MainActivity : AppCompatActivity() {
                 col = row[cur_col];
                 last_col = cur_col;
             }
-
             i++;
         }
-        draw();
+        draw(all);
     }
     fun run() {
         val s = applicationContext.applicationInfo.nativeLibraryDir
