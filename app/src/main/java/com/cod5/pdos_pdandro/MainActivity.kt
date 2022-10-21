@@ -16,11 +16,10 @@ import java.io.IOException
 import java.io.OutputStreamWriter
 import java.util.*
 import kotlin.math.ceil
-import kotlin.math.floor
 
 class MainActivity : AppCompatActivity() {
 
-    lateinit var binding: ActivityMainBinding
+    private lateinit var binding: ActivityMainBinding
     private lateinit var bitmap: Bitmap
     private lateinit var canvas: Canvas
     private lateinit var paint: Paint
@@ -30,22 +29,48 @@ class MainActivity : AppCompatActivity() {
     private var rows = arrayListOf<ScreenRow>()
     private var cur_col = 0
     private var cur_row = 0
+    private var cur_show = true
+    private var cur_timer = 0
     private var escape_state = 0
-    private var escape_sb = StringBuilder()
+    private var escape_val = 0
     private var escape_args = arrayListOf<Int>()
-
+    private var escape_save = arrayListOf<Int>()
+    private var escape_gfx = ScreenChar("")
     private lateinit var proc: Process
-    lateinit var wri: OutputStreamWriter
-    var input_buf = ""
+    private lateinit var wri: OutputStreamWriter
+    private var input_buf = ""
+
+    companion object {
+        var normal = Typeface.create("monospace", Typeface.NORMAL)
+        var bold = Typeface.create("monospace", Typeface.BOLD)
+        var italic = Typeface.create("monospace", Typeface.ITALIC)
+        var bolditalic = Typeface.create("monospace", Typeface.BOLD_ITALIC)
+    }
 
     class ScreenChar(str: String) {
         public var txt = str
+        public var decoration = ""
         public var color = Color.BLACK
         public var bgcolor = Color.WHITE
+        public var typeface = MainActivity.normal
+
+        fun set(model: ScreenChar)
+        {
+            typeface = model.typeface
+            color = model.color
+            bgcolor = model.bgcolor
+            decoration = model.decoration
+        }
+        fun reset() {
+            color = Color.BLACK
+            bgcolor = Color.WHITE
+            typeface = MainActivity.normal
+            decoration = ""
+        }
     }
 
     class ScreenRow (nbcol: Int) {
-        public var col = arrayListOf<ScreenChar>()
+        var col = arrayListOf<ScreenChar>()
         init {
             var i = 0;
             while (i < nbcol) {
@@ -65,17 +90,15 @@ class MainActivity : AppCompatActivity() {
                 input_buf = ""
                 wri.flush()
             }
-        } catch (e: Exception)
-        {
-
+        } catch (e: Exception) {
         }
-
     }
     fun read_data() {
         try {
             val b = ByteArray(proc.inputStream.available())
             val t = proc.inputStream.read(b)
             if (t < 1) {
+                draw_cursor()
                 return;
             }
             addtxt(String(b))
@@ -87,39 +110,46 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        val c = event?.unicodeChar;
-        if (c != null) {
-            val s =  when (c) {
-                10 -> "\n"
-                13 -> ""
-                8 -> "\b"
-                0 -> ""
-                else -> event.unicodeChar.toChar().toString()
-            }
-
-            if (s.length > 0) {
+        var s = when (keyCode) {
+                KeyEvent.KEYCODE_ENTER -> "\n"
+                KeyEvent.KEYCODE_NUMPAD_ENTER -> "\n"
+                KeyEvent.KEYCODE_DEL -> "\b"
+                KeyEvent.KEYCODE_FORWARD_DEL -> "\u001b[C\b"
+                KeyEvent.KEYCODE_DPAD_UP -> "\u001b[A"
+                KeyEvent.KEYCODE_DPAD_DOWN -> "\u001b[B"
+                KeyEvent.KEYCODE_DPAD_RIGHT -> "\u001b[C"
+                KeyEvent.KEYCODE_DPAD_LEFT -> "\u001b[D"
+                KeyEvent.KEYCODE_ESCAPE -> "\u001b"
+                else -> "" //keyCode.toString()
+        }
+        if (s.length == 0) {
+                val c = event?.unicodeChar;
+                if (c != null) {
+                    if (c >= ' '.code) {
+                        s = c.toChar().toString()
+                    }
+                }
+        }
+        if (s.length > 0) {
                 val sb = StringBuilder()
                 sb.append(input_buf).append(s)
                 input_buf = sb.toString();
                 write_buf()
-            }
+                return true
+        } else {
+                return super.onKeyDown(keyCode, event)
         }
-
-        return super.onKeyDown(keyCode, event)
     }
 
     fun run_timer() {
         Timer().scheduleAtFixedRate(object : TimerTask() {
             override fun run() {
                 Handler(mainLooper).postDelayed(
-                    {
-                        //write_buf()
-                        read_data()
-                    }, 0.toLong())
-
+                    { read_data() }, 0.toLong())
             }
         }, 1000, 20)
     }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -144,8 +174,9 @@ class MainActivity : AppCompatActivity() {
         paint = Paint()
         paint.color = Color.BLACK
         paint.strokeWidth = 0F
-        paint.typeface = Typeface.create("monospace", Typeface.NORMAL)
+        paint.typeface = normal
 
+        // find the optimal text size for the screen
         var h = 0F
         paint.textSize = 8F
         var add = 1.0F
@@ -164,7 +195,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-
         binding.imageView?.setImageBitmap(bitmap)
         line_height = paint.fontMetrics.descent - paint.fontMetrics.ascent
         glyph_width = paint.measureText("_");
@@ -180,12 +210,7 @@ class MainActivity : AppCompatActivity() {
         var i = 0
         var y = margin.toFloat() - paint.fontMetrics.ascent
         var ascent = paint.fontMetrics.ascent
-        /*paint.color = Color.YELLOW
-        canvas.drawRect(0F, 0F,
-            (bitmap.width).toFloat(),
-            (bitmap.height).toFloat(), paint)*/
 
-        paint.color = Color.BLACK
         while (i < 25) {
             var j = 0;
             val r = rows[i]
@@ -212,7 +237,11 @@ class MainActivity : AppCompatActivity() {
                 while (j < 80) {
                     val col = r[j]
                     paint.color = col.color
+                    paint.typeface = col.typeface
                     canvas.drawText(col.txt, x, y, paint)
+                    if (col.decoration.length > 0) {
+                        canvas.drawText(col.decoration, x, y, paint)
+                    }
                     x += glyph_width
                     j++
                 }
@@ -225,45 +254,182 @@ class MainActivity : AppCompatActivity() {
 
     fun scroll(amount: Int) {
         var i = 0;
-        while (i < amount) {
-            rows.removeAt(0)
-            i++
-        }
-        i = 0
-        while (i < amount) {
-            rows.add(ScreenRow(80));
-            i++
+
+        if (amount < 0) {
+            while (i > amount) {
+                rows.removeLast()
+                i--
+            }
+            i = 0
+            while (i > amount) {
+                rows.add(0, ScreenRow(80));
+                i--
+            }
+        } else {
+            while (i < amount) {
+                rows.removeAt(0)
+                i++
+            }
+            i = 0
+            while (i < amount) {
+                rows.add(ScreenRow(80));
+                i++
+            }
         }
     }
 
-    fun vt100(c: Int) {
-        // https://notes.burke.libbey.me/ansi-escape-codes/
+    fun earse(start_col : Int, start_row :Int, end_col: Int, end_row:Int) {
+        var r = start_row;
+        while (r <= end_row) {
+            var row = rows[r]
+            var c = 0
+            var ec = 79
+            if (r == start_row ) {
+                c = start_col
+            }
+            if (r == end_row) {
+                c = end_col
+            }
+            while (c <= ec) {
+                row[c].txt = "" // TODO
+                c++
+            }
+            r++
+        }
+    }
+
+    fun get_ansi_color(index: Int) : Int {
+        return when(index) {
+            0 -> Color.BLACK
+            1 -> Color.RED
+            2 -> Color.GREEN
+            3 -> Color.YELLOW
+            4 -> Color.BLUE
+            5 -> Color.MAGENTA
+            6 -> Color.CYAN
+            7 -> Color.WHITE
+            else -> Color.GRAY
+        }
+    }
+
+    // Select Graphics Rendition
+    // https://en.wikipedia.org/wiki/ANSI_escape_code
+    fun sgr() {
+        var f = 0
+        if (escape_args.size > 1) {
+            f = escape_args[0]
+        }
+        if (f == 0) {
+            escape_gfx.reset();
+        } else if (f == 1) {
+            if (escape_gfx.typeface == italic) {
+                escape_gfx.typeface = bolditalic
+            } else {
+                escape_gfx.typeface = bold
+            }
+        } else if (f == 2) {
+        } else if (f == 3) {
+            if (escape_gfx.typeface == bold) {
+                escape_gfx.typeface = bolditalic
+            } else {
+                escape_gfx.typeface = italic
+            }
+        } else if (f == 4) {
+            escape_gfx.decoration = "_"
+        } else if (f >= 30 && f <= 37) {
+            escape_gfx.color = get_ansi_color(f - 30)
+        } else if (f >= 40 && f <= 47) {
+            escape_gfx.bgcolor = get_ansi_color(f - 40)
+        } else if (f >= 90 && f <= 97) {
+            escape_gfx.color = get_ansi_color(f - 90) // FIXME brighter
+        } else if (f >= 100 && f <= 107) {
+            escape_gfx.bgcolor = get_ansi_color(f - 100) // FIXME brighter
+        }
+    }
+
+    fun draw_cursor() {
+        if (!cur_show) {
+            return;
+        }
+        cur_timer++;
+        if (cur_timer == 25) {
+            var bg = rows[cur_row][cur_col].bgcolor
+            var fg = rows[cur_row][cur_col].color
+            rows[cur_row][cur_col].bgcolor = fg
+            rows[cur_row][cur_col].color = bg
+            draw(false)
+            rows[cur_row][cur_col].bgcolor = bg
+            rows[cur_row][cur_col].color = fg
+        } else if (cur_timer == 50) {
+            draw(false)
+            cur_timer = 0
+        }
+    }
+
+    fun ansi_private(c : Int) {
+        if (c == 'h'.code) {
+            if (escape_args.size > 1) {
+                val cmd = escape_args[1]
+                if (cmd == 25) {
+                    cur_show = true
+                }
+            }
+        } else if (c == 'l'.code) {
+            if (escape_args.size > 1) {
+                val cmd = escape_args[1]
+                if (cmd == 25) {
+                    cur_show = false
+                }
+            }
+        }
+    }
+
+    fun ansi_term(c: Int) {
+        // https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
+        if (escape_args.size > 0) {
+            if (escape_args[0] == -'?'.code) {
+                ansi_private(c)
+                return
+            }
+        }
         if (c == 'A'.code) {
             if (escape_args.size > 0) {
                 cur_row -= escape_args[0]
+            } else {
+                cur_row--
             }
         } else if (c == 'B'.code) {
             if (escape_args.size > 0) {
                 cur_row += escape_args[0]
+            } else {
+                cur_row++
             }
         } else if (c == 'C'.code) {
             if (escape_args.size > 0) {
                 cur_col += escape_args[0]
+            } else {
+                cur_col++
             }
         } else if (c == 'D'.code) {
             if (escape_args.size > 0) {
                 cur_col -= escape_args[0]
+            } else {
+                cur_col--
             }
         } else if (c == 'E'.code) {
             if (escape_args.size > 0) {
                 cur_row += escape_args[0]
-                cur_col = 0;
+            } else {
+                cur_row++;
             }
+            cur_col = 0;
         } else if (c == 'F'.code) {
             if (escape_args.size > 0) {
                 cur_row -= escape_args[0]
-                cur_col = 0;
+            } else {
+                cur_row--
             }
+            cur_col = 0;
         } else if (c == 'G'.code || c == 'f'.code) {
             if (escape_args.size > 0) {
                 cur_col = escape_args[0] - 1
@@ -274,13 +440,54 @@ class MainActivity : AppCompatActivity() {
                 cur_col = escape_args[1] - 1
             }
         } else if (c == 'J'.code) {
+            if (escape_args.size == 0) {
+                escape_args.add(0)
+            }
+            if (escape_args.size > 0) {
+                if (c == 0) {
+                    earse(cur_col, cur_row, 79, 25)
+                } else if (c == 1) {
+                    earse(0, 0, cur_col, cur_row)
+                } else if (c == 2) {
+                    earse(0, 0, 79, 25)
+                } else if (c == 3) {
+                }
+            }
         } else if (c == 'K'.code) {
+            if (escape_args.size == 0) {
+                escape_args.add(0)
+            }
+            if (escape_args.size > 0) {
+                if (c == 0) {
+                    earse(cur_col, cur_row, 79, cur_row)
+                } else if (c == 1) {
+                    earse(0, cur_row, cur_col, cur_row)
+                } else if (c == 2) {
+                    earse(0, cur_row, 79, cur_row)
+                }
+            }
         } else if (c == 'S'.code) {
+            if (escape_args.size > 0) {
+                scroll(escape_args[0])
+            } else {
+                scroll(1)
+            }
         } else if (c == 'T'.code) {
+            if (escape_args.size > 0) {
+                scroll(-escape_args[0]) // scroll down
+            } else {
+                scroll(-1)
+            }
         } else if (c == 's'.code) {
+            escape_save.add(cur_row)
+            escape_save.add(cur_col)
         } else if (c == 'u'.code) {
+            if (escape_save.size > 1) {
+                cur_col = escape_save.removeLast()
+                cur_row = escape_save.removeLast()
+            }
         } else if (c == 'm'.code) {
-
+            sgr();
         }
     }
 
@@ -294,62 +501,82 @@ class MainActivity : AppCompatActivity() {
         var last_col = cur_col
         while (i < nbcp) {
             var c = txt.codePointAt(i)
+            if (escape_state == 3) {
+                escape_state = 0;
+            }
             if (escape_state == 1) {
                 // https://notes.burke.libbey.me/ansi-escape-codes/
                 if (c == '['.code) {
-                    escape_state = 2;
-                    escape_sb.clear()
+                    escape_state = 2
+                    escape_val = -1
                     escape_args.clear()
                 } else {
-                    escape_state = 0;
+                    escape_state = 0
                     i-- // rescan the current character
                 }
             } else if (escape_state == 2) {
                 if (c >= '0'.code && c <= '9'.code) {
-                    escape_sb.appendCodePoint(c)
+                    if (escape_val == -1) {
+                        escape_val = 0
+                    }
+                    escape_val *= 10
+                    escape_val += c - '0'.code
                 } else if (c == ';'.code) {
-                    try {
-                        escape_args.add(escape_sb.toString().toInt())
-                    } catch(e: Exception) {
-                        escape_args.add(0)
-                    }
-                    escape_sb.clear()
+                    escape_args.add(escape_val)
+                    escape_val = -1
+                } else if (c == '='.code) {
+                    escape_args.add(-'='.code)
+                    escape_val = -1
+                } else if (c == '?'.code) {
+                    escape_args.add(-'?'.code)
+                    escape_val = -1
                 } else {
-                    try {
-                        escape_args.add(escape_sb.toString().toInt())
-                        escape_sb.clear()
-                    } catch(e: Exception) {
+                    if (escape_val >= 0) {
+                        escape_args.add(escape_val)
                     }
-                    vt100(c)
+                    ansi_term(c)
                     all = true
-                    escape_state = 0
+                    escape_state = 3
                 }
             } else if (c == 10) { // \n
                 cur_row++;
                 cur_col = 0;
             } else if (c == 13) { // \r
-                //el.cur_col = 0;
             } else if (c == 8) {
                 if (cur_col > 0) {
                     cur_col--;
-                    col.txt = ""
+                    col = row[cur_col]
+                    col.txt = " "
                 }
             } else if (c == 0x1B) { // ESC
                 escape_state = 1;
             } else {
                 val sb = StringBuilder()
                 sb.appendCodePoint(c)
+                col.set(escape_gfx)
                 col.txt = sb.toString()
                 cur_col++;
             }
-            if (cur_col >= 80) {
+            if (cur_col < 0) {
                 cur_col = 0;
-                cur_row++;
+            }
+            if (cur_row < 0) {
+                cur_row = 0;
+            }
+            if (cur_col >= 80) {
+                if (escape_state == 0) {
+                    cur_row++;
+                    cur_col = 0;
+                } else {
+                    cur_col = 79;
+                }
             }
             if (cur_row >= 25) {
-                scroll(cur_row - 24);
+                if (escape_state == 0) {
+                    scroll(cur_row - 24);
+                    last_row = -1;
+                }
                 cur_row = 24;
-                last_row = -1;
             }
             if (last_row != cur_row) {
                 all = true
@@ -365,6 +592,7 @@ class MainActivity : AppCompatActivity() {
         }
         draw(all);
     }
+
     fun run() {
         val s = applicationContext.applicationInfo.nativeLibraryDir
         val p = applicationContext.applicationInfo.dataDir
@@ -372,9 +600,7 @@ class MainActivity : AppCompatActivity() {
         try {
             val bin = "$p/bin"
             Os.symlink(s, bin);
-        } catch (e:Exception)
-        {
-
+        } catch (e:Exception) {
         }
         val c = "$s/libpdos.so"
         val dir = File(p);
@@ -386,8 +612,6 @@ class MainActivity : AppCompatActivity() {
             val own = applicationContext.applicationInfo.nativeLibraryDir
             proc = Runtime.getRuntime().exec(arrayOf<String> (this, "$own/lib%s.so"), Os.environ(), workingDir)
             wri = proc.outputStream.writer()
-
-            //proc.waitFor(1, TimeUnit.SECONDS)
             return ""
         } catch(e: IOException) {
             e.printStackTrace()
