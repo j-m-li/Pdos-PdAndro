@@ -33,11 +33,14 @@ void ls(const char *dir)
 }
 int main(int argc, char *argv[])
 {
+    int c;
     if (argc > 1) {
         ls(argv[1]);
     } else {
         ls("./");
     }
+    c = getchar();
+    printf("You typed: '%c'\n", c);
     return 0;
 }
 

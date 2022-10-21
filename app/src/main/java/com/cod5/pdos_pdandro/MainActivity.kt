@@ -15,7 +15,9 @@ import java.io.File
 import java.io.IOException
 import java.io.OutputStreamWriter
 import java.util.*
+import java.util.concurrent.TimeUnit
 import kotlin.math.ceil
+import kotlin.system.exitProcess
 
 class MainActivity : AppCompatActivity() {
 
@@ -50,8 +52,8 @@ class MainActivity : AppCompatActivity() {
     class ScreenChar(str: String) {
         public var txt = str
         public var decoration = ""
-        public var color = Color.BLACK
-        public var bgcolor = Color.WHITE
+        public var color = Color.WHITE
+        public var bgcolor = Color.BLACK
         public var typeface = MainActivity.normal
 
         fun set(model: ScreenChar)
@@ -78,6 +80,13 @@ class MainActivity : AppCompatActivity() {
                 i++
             }
         }
+        fun set(model: ScreenChar) {
+            var i = 0;
+            while (i < col.size) {
+                col[i].set(model)
+                i++
+            }
+        }
         operator fun get(j: Int): ScreenChar {
             return col[j]
         }
@@ -95,6 +104,13 @@ class MainActivity : AppCompatActivity() {
     }
     fun read_data() {
         try {
+            var x = proc.exitValue();
+            finishAffinity()
+            exitProcess(0)
+            System.exit(0)
+        } catch (e: Exception) {
+        }
+        try {
             val b = ByteArray(proc.inputStream.available())
             val t = proc.inputStream.read(b)
             if (t < 1) {
@@ -103,24 +119,29 @@ class MainActivity : AppCompatActivity() {
             }
             addtxt(String(b))
         } catch (e: Exception) {
-            e.printStackTrace()
-            finish()
-            System.exit(0)
         }
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         var s = when (keyCode) {
-                KeyEvent.KEYCODE_ENTER -> "\n"
-                KeyEvent.KEYCODE_NUMPAD_ENTER -> "\n"
-                KeyEvent.KEYCODE_DEL -> "\b"
-                KeyEvent.KEYCODE_FORWARD_DEL -> "\u001b[C\b"
-                KeyEvent.KEYCODE_DPAD_UP -> "\u001b[A"
-                KeyEvent.KEYCODE_DPAD_DOWN -> "\u001b[B"
-                KeyEvent.KEYCODE_DPAD_RIGHT -> "\u001b[C"
-                KeyEvent.KEYCODE_DPAD_LEFT -> "\u001b[D"
-                KeyEvent.KEYCODE_ESCAPE -> "\u001b"
-                else -> "" //keyCode.toString()
+            KeyEvent.KEYCODE_ENTER -> "\n"
+            KeyEvent.KEYCODE_NUMPAD_ENTER -> "\n"
+            KeyEvent.KEYCODE_ESCAPE -> "\u001b\u001b"
+            KeyEvent.KEYCODE_DEL -> "\b"
+            // https://sourceforge.net/p/pdos/gitcode/ci/master/tree/src/pdos.c#l1764
+            KeyEvent.KEYCODE_DPAD_UP -> "\u001b[A"
+            KeyEvent.KEYCODE_DPAD_DOWN -> "\u001b[B"
+            KeyEvent.KEYCODE_DPAD_RIGHT -> "\u001b[C"
+            KeyEvent.KEYCODE_DPAD_LEFT -> "\u001b[D"
+            KeyEvent.KEYCODE_CTRL_LEFT -> "\u001b[1;5;D"
+            KeyEvent.KEYCODE_CTRL_RIGHT -> "\u001b[1;5;C"
+            KeyEvent.KEYCODE_INSERT -> "\u001b[2~"
+            KeyEvent.KEYCODE_FORWARD_DEL -> "\u001b[3~"
+            KeyEvent.KEYCODE_MOVE_HOME -> "\u001b[1~"
+            KeyEvent.KEYCODE_MOVE_END -> "\u001b[4~"
+            KeyEvent.KEYCODE_PAGE_DOWN -> "\u001b[6~" // FIXME CTRL "\u001b[6;5~"
+            KeyEvent.KEYCODE_PAGE_UP -> "\u001b[5~" // FIXME CTRL "\u001b[5;5~"
+            else -> "" //keyCode.toString()
         }
         if (s.length == 0) {
                 val c = event?.unicodeChar;
@@ -172,7 +193,7 @@ class MainActivity : AppCompatActivity() {
         canvas = Canvas(bitmap)
 
         paint = Paint()
-        paint.color = Color.BLACK
+        paint.color = Color.WHITE
         paint.strokeWidth = 0F
         paint.typeface = normal
 
@@ -263,6 +284,7 @@ class MainActivity : AppCompatActivity() {
             i = 0
             while (i > amount) {
                 rows.add(0, ScreenRow(80));
+                rows[0].set(escape_gfx)
                 i--
             }
         } else {
@@ -273,6 +295,7 @@ class MainActivity : AppCompatActivity() {
             i = 0
             while (i < amount) {
                 rows.add(ScreenRow(80));
+                rows[rows.size-1].set(escape_gfx)
                 i++
             }
         }
@@ -367,14 +390,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun ansi_private(c : Int) {
-        if (c == 'h'.code) {
+        if (c == 'h'.code) {    // show caret
             if (escape_args.size > 1) {
                 val cmd = escape_args[1]
                 if (cmd == 25) {
                     cur_show = true
                 }
             }
-        } else if (c == 'l'.code) {
+        } else if (c == 'l'.code) { // hide caret
             if (escape_args.size > 1) {
                 val cmd = escape_args[1]
                 if (cmd == 25) {
@@ -386,98 +409,69 @@ class MainActivity : AppCompatActivity() {
 
     fun ansi_term(c: Int) {
         // https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
+        // https://sourceforge.net/p/pdos/gitcode/ci/master/tree/src/pdos.c#l5493
+        var n = 1
         if (escape_args.size > 0) {
             if (escape_args[0] == -'?'.code) {
                 ansi_private(c)
                 return
             }
+            n = escape_args[0]
         }
         if (c == 'A'.code) {
-            if (escape_args.size > 0) {
-                cur_row -= escape_args[0]
-            } else {
-                cur_row--
-            }
+            cur_row -= n
         } else if (c == 'B'.code) {
-            if (escape_args.size > 0) {
-                cur_row += escape_args[0]
-            } else {
-                cur_row++
-            }
+            cur_row += n
         } else if (c == 'C'.code) {
-            if (escape_args.size > 0) {
-                cur_col += escape_args[0]
-            } else {
-                cur_col++
-            }
+            cur_col += n
         } else if (c == 'D'.code) {
-            if (escape_args.size > 0) {
-                cur_col -= escape_args[0]
-            } else {
-                cur_col--
-            }
+            cur_col -= n
         } else if (c == 'E'.code) {
-            if (escape_args.size > 0) {
-                cur_row += escape_args[0]
-            } else {
-                cur_row++;
-            }
+            cur_row += n
             cur_col = 0;
         } else if (c == 'F'.code) {
-            if (escape_args.size > 0) {
-                cur_row -= escape_args[0]
-            } else {
-                cur_row--
-            }
+            cur_row -= n
             cur_col = 0;
         } else if (c == 'G'.code || c == 'f'.code) {
             if (escape_args.size > 0) {
                 cur_col = escape_args[0] - 1
             }
-        } else if (c == 'H'.code) {
-            if (escape_args.size > 1) {
+        } else if (c == 'H'.code) { // set cursor position
+            if (escape_args.size > 0) {
                 cur_row = escape_args[0] - 1
-                cur_col = escape_args[1] - 1
-            }
-        } else if (c == 'J'.code) {
-            if (escape_args.size == 0) {
-                escape_args.add(0)
-            }
-            if (escape_args.size > 0) {
-                if (c == 0) {
-                    earse(cur_col, cur_row, 79, 25)
-                } else if (c == 1) {
-                    earse(0, 0, cur_col, cur_row)
-                } else if (c == 2) {
-                    earse(0, 0, 79, 25)
-                } else if (c == 3) {
+                if (escape_args.size > 1) {
+                    cur_col = escape_args[1] - 1
+                } else {
+                    cur_col = 0
                 }
             }
-        } else if (c == 'K'.code) {
+        } else if (c == 'J'.code) { // clear screen
             if (escape_args.size == 0) {
-                escape_args.add(0)
+                n = 0
             }
-            if (escape_args.size > 0) {
-                if (c == 0) {
-                    earse(cur_col, cur_row, 79, cur_row)
-                } else if (c == 1) {
-                    earse(0, cur_row, cur_col, cur_row)
-                } else if (c == 2) {
-                    earse(0, cur_row, 79, cur_row)
-                }
+            if (n == 0) {
+                earse(cur_col, cur_row, 79, 24)
+            } else if (n == 1) {
+                earse(0, 0, cur_col, cur_row)
+            } else if (n == 2) {
+                earse(0, 0, 79, 24)
+            } else if (n == 3) {
+            }
+        } else if (c == 'K'.code) { // clear line
+            if (escape_args.size == 0) {
+               n = 0
+            }
+            if (n == 0) {
+                earse(cur_col, cur_row, 79, cur_row)
+            } else if (n == 1) {
+                earse(0, cur_row, cur_col, cur_row)
+            } else if (n == 2) {
+                earse(0, cur_row, 79, cur_row)
             }
         } else if (c == 'S'.code) {
-            if (escape_args.size > 0) {
-                scroll(escape_args[0])
-            } else {
-                scroll(1)
-            }
+            scroll(n)
         } else if (c == 'T'.code) {
-            if (escape_args.size > 0) {
-                scroll(-escape_args[0]) // scroll down
-            } else {
-                scroll(-1)
-            }
+            scroll(-n)
         } else if (c == 's'.code) {
             escape_save.add(cur_row)
             escape_save.add(cur_col)
