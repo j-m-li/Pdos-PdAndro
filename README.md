@@ -9,6 +9,9 @@ The source code is Public Domain except the gradle directory and gradlew.*
 
 If you want to make change to the APK, you need to sign it before install it :
 ```
+zip -r app.zip ./app/
+ 
+mv app.zip app.apk
 
 keytool -genkey -keyalg RSA -alias mykeystore -keystore mykeystore.jks -storepass 12345678 -validity 360
 
