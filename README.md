@@ -21,5 +21,5 @@ apksigner sign --ks release.jks app.apk
 
 https://docs.oracle.com/en/java/javase/12/tools/keytool.html
 
-https://packages.debian.org/sid/apksigner
+https://developer.android.com/studio/command-line/apksigner
 
