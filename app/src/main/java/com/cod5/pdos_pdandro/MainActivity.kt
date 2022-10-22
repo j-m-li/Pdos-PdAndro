@@ -3,21 +3,29 @@
  */
 package com.cod5.pdos_pdandro
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.graphics.*
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.os.Handler
 import android.system.Os
 import android.util.DisplayMetrics
 import android.view.KeyEvent
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import com.cod5.pdos_pdandro.databinding.ActivityMainBinding
+import com.google.android.material.snackbar.Snackbar
 import java.io.File
 import java.io.IOException
 import java.io.OutputStreamWriter
 import java.util.*
-import java.util.concurrent.TimeUnit
 import kotlin.math.ceil
 import kotlin.system.exitProcess
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -43,6 +51,7 @@ class MainActivity : AppCompatActivity() {
     private var input_buf = ""
 
     companion object {
+        private const val STORAGE_PERMISSION_CODE = 101
         var normal = Typeface.create("monospace", Typeface.NORMAL)
         var bold = Typeface.create("monospace", Typeface.BOLD)
         var italic = Typeface.create("monospace", Typeface.ITALIC)
@@ -542,7 +551,7 @@ class MainActivity : AppCompatActivity() {
                 } else if (c == '?'.code) {
                     escape_args.add(-'?'.code)
                     escape_val = -1
-                } else {
+                } else if (c >= 0x40 && c <= 0x7E){
                     if (escape_val >= 0) {
                         escape_args.add(escape_val)
                     }
@@ -605,9 +614,39 @@ class MainActivity : AppCompatActivity() {
         draw(all);
     }
 
+    override fun onRequestPermissionsResult(requestCode: Int,
+                                            permissions: Array<String>,
+                                            grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == STORAGE_PERMISSION_CODE) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this@MainActivity, "Storage Permission Granted", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this@MainActivity, "Storage Permission Denied", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun hasWriteStoragePermission(): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            return true
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (ActivityCompat.checkSelfPermission(this!!, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(
+                    arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                    STORAGE_PERMISSION_CODE
+                )
+                return false
+            }
+        }
+        return true
+    }
+
     fun run() {
         val s = applicationContext.applicationInfo.nativeLibraryDir
         val p = applicationContext.applicationInfo.dataDir
+
+        hasWriteStoragePermission()
 
         try {
             val bin = "$p/bin"
@@ -615,14 +654,17 @@ class MainActivity : AppCompatActivity() {
         } catch (e:Exception) {
         }
         val c = "$s/libpdos.so"
-        val dir = File(p);
+        //val dir = File(p);
+        val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
         c.runCommand(dir)
     }
 
     fun String.runCommand(workingDir: File): String? {
         try {
             val own = applicationContext.applicationInfo.nativeLibraryDir
-            proc = Runtime.getRuntime().exec(arrayOf<String> (this, "$own/lib%s.so"), Os.environ(), workingDir)
+           proc = Runtime.getRuntime().exec(
+                arrayOf<String> (this, "$own/lib%s.so", workingDir.absolutePath),
+                Os.environ(), workingDir)
             wri = proc.outputStream.writer()
             return ""
         } catch(e: IOException) {

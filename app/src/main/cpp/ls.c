@@ -19,7 +19,7 @@ void ls(const char *dir)
     struct dirent** list;
     int n;
     n = scandir(dir, &list,NULL, alphasort);
-    if (n < 1) {
+    if (n < 0) {
         printf("%s : not found or empty\n", dir);
     } else {
         printf("Directory : %s\n", dir);
@@ -34,13 +34,14 @@ void ls(const char *dir)
 int main(int argc, char *argv[])
 {
     int c;
+
     if (argc > 1) {
         ls(argv[1]);
     } else {
         ls("./");
     }
-    c = getchar();
-    printf("You typed: '%c'\n", c);
+    //c = getchar();
+    //printf("You typed: '%c'\n", c);
     return 0;
 }
 

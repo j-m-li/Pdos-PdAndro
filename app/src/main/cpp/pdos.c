@@ -26,7 +26,7 @@ void printenv()
     }
 }
 
-int run(char *cmd)
+int run(char *cmd, char *arg1)
 {
     pid_t pid;
     int in;
@@ -34,7 +34,8 @@ int run(char *cmd)
     int status = -1;
     char *args[10];
     args[0] = cmd;
-    args[1] = NULL;
+    args[1] = arg1;
+    args[2] = NULL;
 
     fcntl(STDIN_FILENO, F_SETFL, old_mode);
     pid = fork();
@@ -93,6 +94,10 @@ int main(int argc, char *argv[])
     if (argc > 1) {
         write(STDOUT_FILENO, argv[1], strlen(argv[1]));
     }
+    if (argc > 2) {
+        write(STDOUT_FILENO, "\n\n", 2);
+        write(STDOUT_FILENO, argv[2], strlen(argv[2]));
+    }
     write(STDOUT_FILENO, "\nprompt> ", 8);
     old_mode = fcntl(STDIN_FILENO, F_GETFL);
     new_mode = old_mode | O_NONBLOCK;
@@ -119,18 +124,21 @@ int main(int argc, char *argv[])
                             write(STDOUT_FILENO, prompt, strlen(prompt));
                         } else if (!strcmp(cmd, "LS")) {
                             snprintf(cmd, sizeof(cmd), argv[1], "ls");
-                            run(cmd);
+                            run(cmd, NULL/*argv[2]*/);
                         } else if (!strcmp(cmd, "test")) {
                             snprintf(cmd, sizeof(cmd), argv[1], "test");
-                            run(cmd);
+                            run(cmd, NULL);
                         } else if (!strcmp(cmd, "test1")) {
                             snprintf(cmd, sizeof(cmd), argv[1], "test1");
-                            run(cmd);
+                            run(cmd, NULL);
                         } else if (!strcmp(cmd, "test2")) {
                             snprintf(cmd, sizeof(cmd), argv[1], "test2");
-                            run(cmd);
+                            run(cmd, NULL);
+                        } else if (!strcmp(cmd, "test3")) {
+                            snprintf(cmd, sizeof(cmd), argv[1], "test3");
+                            run(cmd, NULL);
                         } else {
-                            run(cmd);
+                            system(cmd);
                         }
                      }
 
