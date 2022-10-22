@@ -122,7 +122,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+    override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
         var s = when (keyCode) {
             KeyEvent.KEYCODE_ENTER -> "\n"
             KeyEvent.KEYCODE_NUMPAD_ENTER -> "\n"
@@ -139,12 +139,30 @@ class MainActivity : AppCompatActivity() {
             KeyEvent.KEYCODE_FORWARD_DEL -> "\u001b[3~"
             KeyEvent.KEYCODE_MOVE_HOME -> "\u001b[1~"
             KeyEvent.KEYCODE_MOVE_END -> "\u001b[4~"
-            KeyEvent.KEYCODE_PAGE_DOWN -> "\u001b[6~" // FIXME CTRL "\u001b[6;5~"
-            KeyEvent.KEYCODE_PAGE_UP -> "\u001b[5~" // FIXME CTRL "\u001b[5;5~"
-            else -> "" //keyCode.toString()
+            KeyEvent.KEYCODE_PAGE_DOWN -> {
+                if (event.isCtrlPressed) {
+                    "\u001b[6;5~"
+                } else {
+                    "\u001b[6~"
+                }
+            }
+            KeyEvent.KEYCODE_PAGE_UP -> {
+                if (event.isCtrlPressed) {
+                    "\u001b[5;5~"
+                } else {
+                    "\u001b[5~"
+                }
+            }
+            else -> ""
+        }
+        if (event.isAltPressed) {
+            if (keyCode >= KeyEvent.KEYCODE_A && keyCode <= KeyEvent.KEYCODE_Z) {
+                s = (keyCode - KeyEvent.KEYCODE_A + 'a'.code).toChar().toString()
+                s = "\u001b$s"
+            }
         }
         if (s.length == 0) {
-                val c = event?.unicodeChar;
+                val c = event.unicodeChar;
                 if (c != null) {
                     if (c >= ' '.code) {
                         s = c.toChar().toString()
