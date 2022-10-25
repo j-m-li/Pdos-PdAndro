@@ -1,4 +1,6 @@
 /*
+ * 2022-10-25 PUBLIC DOMAIN  by Jean-Marc Lienher
+ *
  * The authors disclam copyright to this source code
  */
 package com.cod5.pdos_pdandro
@@ -23,6 +25,7 @@ import java.io.File
 import java.io.IOException
 import java.io.OutputStreamWriter
 import java.util.*
+import java.util.concurrent.TimeUnit
 import kotlin.math.ceil
 import kotlin.system.exitProcess
 
@@ -58,6 +61,7 @@ class MainActivity : AppCompatActivity() {
         var bolditalic = Typeface.create("monospace", Typeface.BOLD_ITALIC)
     }
 
+    /* a single charcater in our ANSI console */
     class ScreenChar(str: String) {
         public var txt = str
         public var decoration = ""
@@ -80,6 +84,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /* a row in our ANSI console */
     class ScreenRow (nbcol: Int) {
         var col = arrayListOf<ScreenChar>()
         init {
@@ -101,6 +106,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /* write data to the input of our native executable */
     fun write_buf() {
         try {
             if (input_buf.length > 0) {
@@ -111,12 +117,14 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Exception) {
         }
     }
+
+    /* read data from our native executable and quit if it has exit */
     fun read_data() {
         try {
             var x = proc.exitValue();
             finishAffinity()
             exitProcess(0)
-            System.exit(0)
+            System.exit(x)
         } catch (e: Exception) {
         }
         try {
@@ -131,6 +139,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /* physical keyboard input */
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
         var s = when (keyCode) {
             KeyEvent.KEYCODE_ENTER -> "\n"
@@ -189,6 +198,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /* timer to read data from our native executable */
     fun run_timer() {
         Timer().scheduleAtFixedRate(object : TimerTask() {
             override fun run() {
@@ -198,6 +208,7 @@ class MainActivity : AppCompatActivity() {
         }, 1000, 20)
     }
 
+    /* called when the activity starts */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -209,6 +220,7 @@ class MainActivity : AppCompatActivity() {
         init_display()
     }
 
+    /* initilise the console widget area */
     fun init_display()
     {
         val dm = DisplayMetrics()
@@ -254,6 +266,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /* draw the console characters */
     fun draw(draw_all: Boolean) {
         var i = 0
         var y = margin.toFloat() - paint.fontMetrics.ascent
@@ -300,6 +313,7 @@ class MainActivity : AppCompatActivity() {
         binding.imageView?.invalidate()
     }
 
+    /* scroll the console rows */
     fun scroll(amount: Int) {
         var i = 0;
 
@@ -328,6 +342,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /* blank the character in the range */
     fun earse(start_col : Int, start_row :Int, end_col: Int, end_row:Int) {
         var r = start_row;
         while (r <= end_row) {
@@ -348,6 +363,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /* 8 colors for the ANSI console */
     fun get_ansi_color(index: Int) : Int {
         return when(index) {
             0 -> Color.BLACK
@@ -397,6 +413,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /* blink the cursor */
     fun draw_cursor() {
         if (!cur_show) {
             return;
@@ -416,6 +433,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /* private escape sequence */
     fun ansi_private(c : Int) {
         if (c == 'h'.code) {    // show caret
             if (escape_args.size > 1) {
@@ -434,6 +452,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /* parse escape sequences */
     fun ansi_term(c: Int) {
         // https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797
         // https://sourceforge.net/p/pdos/gitcode/ci/master/tree/src/pdos.c#l5493
@@ -512,6 +531,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /* append text to our ANSI console */
     fun addtxt(txt: String) {
         var i = 0
         var all = false
@@ -614,6 +634,7 @@ class MainActivity : AppCompatActivity() {
         draw(all);
     }
 
+    /* print result of permission request */
     override fun onRequestPermissionsResult(requestCode: Int,
                                             permissions: Array<String>,
                                             grantResults: IntArray) {
@@ -627,6 +648,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /* asks for read/write permission on Download directory */
     private fun hasWriteStoragePermission(): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             return true
@@ -642,28 +664,24 @@ class MainActivity : AppCompatActivity() {
         return true
     }
 
+    /* run native executable */
     fun run() {
         val s = applicationContext.applicationInfo.nativeLibraryDir
-        val p = applicationContext.applicationInfo.dataDir
 
         hasWriteStoragePermission()
 
-        try {
-            val bin = "$p/bin"
-            Os.symlink(s, bin);
-        } catch (e:Exception) {
-        }
-        val c = "$s/libpdos.so"
+        val c = "$s/libbios.so"
         //val dir = File(p);
         val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
         c.runCommand(dir)
     }
 
+    /* excecute system command */
     fun String.runCommand(workingDir: File): String? {
         try {
             val own = applicationContext.applicationInfo.nativeLibraryDir
            proc = Runtime.getRuntime().exec(
-                arrayOf<String> (this, "$own/lib%s.so", workingDir.absolutePath),
+                arrayOf<String> (this), //, "$own/lib%s.so", workingDir.absolutePath),
                 Os.environ(), workingDir)
             wri = proc.outputStream.writer()
             return ""
