@@ -125,8 +125,8 @@ int main(int argc, char *argv[])
                         } else if (!strcmp(cmd, "LS")) {
                             snprintf(cmd, sizeof(cmd), argv[1], "ls");
                             run(cmd, NULL/*argv[2]*/);
-                        } else if (!strcmp(cmd, "test")) {
-                            snprintf(cmd, sizeof(cmd), argv[1], "test");
+                        } else if (!strcmp(cmd, "bios")) {
+                            snprintf(cmd, sizeof(cmd), argv[1], "bios");
                             run(cmd, NULL);
                         } else if (!strcmp(cmd, "test1")) {
                             snprintf(cmd, sizeof(cmd), argv[1], "test1");
