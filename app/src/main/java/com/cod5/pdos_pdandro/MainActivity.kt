@@ -13,19 +13,18 @@ import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
 import android.system.Os
+import android.system.OsConstants.F_OK
 import android.util.DisplayMetrics
 import android.view.KeyEvent
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.cod5.pdos_pdandro.databinding.ActivityMainBinding
-import com.google.android.material.snackbar.Snackbar
 import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
 import java.io.OutputStreamWriter
 import java.util.*
-import java.util.concurrent.TimeUnit
 import kotlin.math.ceil
 import kotlin.system.exitProcess
 
@@ -673,6 +672,39 @@ class MainActivity : AppCompatActivity() {
         val c = "$s/libbios.so"
         //val dir = File(p);
         val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        try {
+            val file = File(dir, "hi.txt")
+            if (!file.exists()) {
+                val input = resources.openRawResource(R.raw.hi)
+                val output = FileOutputStream(file)
+                val buffer = ByteArray(4096)
+                var rd = input.read(buffer)
+                while (rd > 0) {
+                    output.write(buffer, 0, rd)
+                    rd = input.read(buffer)
+                }
+                input.close()
+                output.close()
+            }
+        } catch (e: Exception) {
+        }
+
+        try {
+            val file = File(dir, "pcomm.arm")
+            if (!file.exists()) {
+                val input = resources.openRawResource(R.raw.pcomm)
+                val output = FileOutputStream(file)
+                val buffer = ByteArray(4096)
+                var rd = input.read(buffer)
+                while (rd > 0) {
+                    output.write(buffer, 0, rd)
+                    rd = input.read(buffer)
+                }
+                input.close()
+                output.close()
+            }
+        } catch (e: Exception) {
+        }
         c.runCommand(dir)
     }
 

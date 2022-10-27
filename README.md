@@ -1,11 +1,27 @@
 
-# Android apk for [PDOS](https://pdos.org)
+# Android armeabi-v7a (32bit ARM) apk for [PDOS](https://pdos.org)
 
 The source code is Public Domain except the gradle directory and gradlew.*
 
 ## The application requires a hardware keyboard attached to your smartphone.
 
+This app will create 2 files in your "Download/" folder (hi.txt and pcomm.arm)
+
+## How to use it
+
+After message "please enter a command" enter: ``pcomm.arm``
+
+After message "welcome to pcomm, enter a command" enter: ``type hi.txt``
+
+It will display the content of hi.txt
+
+Then to close the app, enter: exit
+
+
 ![screen](doc/screen.jpg)
+
+
+## Developement
 
 If you want to make change to the APK, you need to sign it before install it :
 ```
