@@ -13,7 +13,6 @@ import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
 import android.system.Os
-import android.system.OsConstants.F_OK
 import android.util.DisplayMetrics
 import android.view.KeyEvent
 import android.widget.Toast
@@ -62,11 +61,11 @@ class MainActivity : AppCompatActivity() {
 
     /* a single charcater in our ANSI console */
     class ScreenChar(str: String) {
-        public var txt = str
-        public var decoration = ""
-        public var color = Color.WHITE
-        public var bgcolor = Color.BLACK
-        public var typeface = MainActivity.normal
+        var txt = str
+        var decoration = ""
+        var color = Color.WHITE
+        var bgcolor = Color.BLACK
+        var typeface = normal
 
         fun set(model: ScreenChar)
         {
@@ -78,7 +77,7 @@ class MainActivity : AppCompatActivity() {
         fun reset() {
             color = Color.BLACK
             bgcolor = Color.WHITE
-            typeface = MainActivity.normal
+            typeface = normal
             decoration = ""
         }
     }
@@ -87,14 +86,14 @@ class MainActivity : AppCompatActivity() {
     class ScreenRow (nbcol: Int) {
         var col = arrayListOf<ScreenChar>()
         init {
-            var i = 0;
+            var i = 0
             while (i < nbcol) {
                 col.add(ScreenChar(" "))
                 i++
             }
         }
         fun set(model: ScreenChar) {
-            var i = 0;
+            var i = 0
             while (i < col.size) {
                 col[i].set(model)
                 i++
@@ -114,27 +113,30 @@ class MainActivity : AppCompatActivity() {
                 wri.flush()
             }
         } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
     /* read data from our native executable and quit if it has exit */
     fun read_data() {
         try {
-            var x = proc.exitValue();
+            val x = proc.exitValue()
             finishAffinity()
-            exitProcess(0)
-            System.exit(x)
+            exitProcess(x)
+            //System.exit(x)
         } catch (e: Exception) {
+            // nothing
         }
         try {
             val b = ByteArray(proc.inputStream.available())
             val t = proc.inputStream.read(b)
             if (t < 1) {
                 draw_cursor()
-                return;
+                return
             }
             addtxt(String(b))
         } catch (e: Exception) {
+            // e.printStackTrace()
         }
     }
 
@@ -179,17 +181,15 @@ class MainActivity : AppCompatActivity() {
             }
         }
         if (s.length == 0) {
-                val c = event.unicodeChar;
-                if (c != null) {
-                    if (c >= ' '.code) {
-                        s = c.toChar().toString()
-                    }
-                }
+            val c = event.unicodeChar
+            if (c >= ' '.code) {
+                s = c.toChar().toString()
+            }
         }
         if (s.length > 0) {
                 val sb = StringBuilder()
                 sb.append(input_buf).append(s)
-                input_buf = sb.toString();
+                input_buf = sb.toString()
                 write_buf()
                 return true
         } else {
@@ -223,9 +223,10 @@ class MainActivity : AppCompatActivity() {
     fun init_display()
     {
         val dm = DisplayMetrics()
+        @Suppress("DEPRECATION")
         windowManager.defaultDisplay.getMetrics(dm)
-        var dw = dm.widthPixels - 2 * margin
-        var dh = dm.heightPixels - 2 * margin
+        val dw = dm.widthPixels - 2 * margin
+        val dh = dm.heightPixels - 2 * margin
 
         bitmap = Bitmap.createBitmap(dw, dh, Bitmap.Config.ARGB_8888)
         canvas = Canvas(bitmap)
@@ -256,11 +257,11 @@ class MainActivity : AppCompatActivity() {
         }
         binding.imageView?.setImageBitmap(bitmap)
         line_height = paint.fontMetrics.descent - paint.fontMetrics.ascent
-        glyph_width = paint.measureText("_");
+        glyph_width = paint.measureText("_")
 
         var i = 0
         while (i < 25) {
-            rows.add(ScreenRow(80));
+            rows.add(ScreenRow(80))
             i++
         }
     }
@@ -269,10 +270,10 @@ class MainActivity : AppCompatActivity() {
     fun draw(draw_all: Boolean) {
         var i = 0
         var y = margin.toFloat() - paint.fontMetrics.ascent
-        var ascent = paint.fontMetrics.ascent
+        val ascent = paint.fontMetrics.ascent
 
         while (i < 25) {
-            var j = 0;
+            var j = 0
             val r = rows[i]
             var x = margin.toFloat()
             if (draw_all || i == cur_row) {
@@ -284,7 +285,7 @@ class MainActivity : AppCompatActivity() {
                     j++
                 }
             }
-            y += line_height;
+            y += line_height
             i++
         }
         i = 0
@@ -306,7 +307,7 @@ class MainActivity : AppCompatActivity() {
                     j++
                 }
             }
-            y += line_height;
+            y += line_height
             i++
         }
         binding.imageView?.invalidate()
@@ -314,7 +315,7 @@ class MainActivity : AppCompatActivity() {
 
     /* scroll the console rows */
     fun scroll(amount: Int) {
-        var i = 0;
+        var i = 0
 
         if (amount < 0) {
             while (i > amount) {
@@ -323,7 +324,7 @@ class MainActivity : AppCompatActivity() {
             }
             i = 0
             while (i > amount) {
-                rows.add(0, ScreenRow(80));
+                rows.add(0, ScreenRow(80))
                 rows[0].set(escape_gfx)
                 i--
             }
@@ -334,7 +335,7 @@ class MainActivity : AppCompatActivity() {
             }
             i = 0
             while (i < amount) {
-                rows.add(ScreenRow(80));
+                rows.add(ScreenRow(80))
                 rows[rows.size-1].set(escape_gfx)
                 i++
             }
@@ -343,11 +344,11 @@ class MainActivity : AppCompatActivity() {
 
     /* blank the character in the range */
     fun earse(start_col : Int, start_row :Int, end_col: Int, end_row:Int) {
-        var r = start_row;
+        var r = start_row
         while (r <= end_row) {
-            var row = rows[r]
+            val row = rows[r]
             var c = 0
-            var ec = 79
+            val ec = 79
             if (r == start_row ) {
                 c = start_col
             }
@@ -385,7 +386,7 @@ class MainActivity : AppCompatActivity() {
             f = escape_args[0]
         }
         if (f == 0) {
-            escape_gfx.reset();
+            escape_gfx.reset()
         } else if (f == 1) {
             if (escape_gfx.typeface == italic) {
                 escape_gfx.typeface = bolditalic
@@ -393,6 +394,7 @@ class MainActivity : AppCompatActivity() {
                 escape_gfx.typeface = bold
             }
         } else if (f == 2) {
+            // do nothing
         } else if (f == 3) {
             if (escape_gfx.typeface == bold) {
                 escape_gfx.typeface = bolditalic
@@ -415,12 +417,12 @@ class MainActivity : AppCompatActivity() {
     /* blink the cursor */
     fun draw_cursor() {
         if (!cur_show) {
-            return;
+            return
         }
-        cur_timer++;
+        cur_timer++
         if (cur_timer == 25) {
-            var bg = rows[cur_row][cur_col].bgcolor
-            var fg = rows[cur_row][cur_col].color
+            val bg = rows[cur_row][cur_col].bgcolor
+            val fg = rows[cur_row][cur_col].color
             rows[cur_row][cur_col].bgcolor = fg
             rows[cur_row][cur_col].color = bg
             draw(false)
@@ -473,10 +475,10 @@ class MainActivity : AppCompatActivity() {
             cur_col -= n
         } else if (c == 'E'.code) {
             cur_row += n
-            cur_col = 0;
+            cur_col = 0
         } else if (c == 'F'.code) {
             cur_row -= n
-            cur_col = 0;
+            cur_col = 0
         } else if (c == 'G'.code || c == 'f'.code) {
             if (escape_args.size > 0) {
                 cur_col = escape_args[0] - 1
@@ -500,7 +502,6 @@ class MainActivity : AppCompatActivity() {
                 earse(0, 0, cur_col, cur_row)
             } else if (n == 2) {
                 earse(0, 0, 79, 24)
-            } else if (n == 3) {
             }
         } else if (c == 'K'.code) { // clear line
             if (escape_args.size == 0) {
@@ -526,7 +527,7 @@ class MainActivity : AppCompatActivity() {
                 cur_row = escape_save.removeLast()
             }
         } else if (c == 'm'.code) {
-            sgr();
+            sgr()
         }
     }
 
@@ -540,9 +541,9 @@ class MainActivity : AppCompatActivity() {
         var last_row = cur_row
         var last_col = cur_col
         while (i < nbcp) {
-            var c = txt.codePointAt(i)
+            val c = txt.codePointAt(i)
             if (escape_state == 3) {
-                escape_state = 0;
+                escape_state = 0
             }
             if (escape_state == 1) {
                 // https://notes.burke.libbey.me/ansi-escape-codes/
@@ -579,58 +580,58 @@ class MainActivity : AppCompatActivity() {
                     escape_state = 3
                 }
             } else if (c == 10) { // \n
-                cur_row++;
-                cur_col = 0;
+                cur_row++
+                cur_col = 0
             } else if (c == 13) { // \r
             } else if (c == 8) {
                 if (cur_col > 0) {
-                    cur_col--;
+                    cur_col--
                     col = row[cur_col]
                     col.txt = " "
                 }
             } else if (c == 0x1B) { // ESC
-                escape_state = 1;
+                escape_state = 1
             } else {
                 val sb = StringBuilder()
                 sb.appendCodePoint(c)
                 col.set(escape_gfx)
                 col.txt = sb.toString()
-                cur_col++;
+                cur_col++
             }
             if (cur_col < 0) {
-                cur_col = 0;
+                cur_col = 0
             }
             if (cur_row < 0) {
-                cur_row = 0;
+                cur_row = 0
             }
             if (cur_col >= 80) {
                 if (escape_state == 0) {
-                    cur_row++;
-                    cur_col = 0;
+                    cur_row++
+                    cur_col = 0
                 } else {
-                    cur_col = 79;
+                    cur_col = 79
                 }
             }
             if (cur_row >= 25) {
                 if (escape_state == 0) {
-                    scroll(cur_row - 24);
-                    last_row = -1;
+                    scroll(cur_row - 24)
+                    last_row = -1
                 }
-                cur_row = 24;
+                cur_row = 24
             }
             if (last_row != cur_row) {
                 all = true
-                row = rows[cur_row];
-                col = row[cur_col];
-                last_row = cur_row;
-                last_col = cur_col;
+                row = rows[cur_row]
+                col = row[cur_col]
+                last_row = cur_row
+                last_col = cur_col
             } else if (last_col != cur_col) {
-                col = row[cur_col];
-                last_col = cur_col;
+                col = row[cur_col]
+                last_col = cur_col
             }
-            i++;
+            i++
         }
-        draw(all);
+        draw(all)
     }
 
     /* print result of permission request */
@@ -652,7 +653,7 @@ class MainActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             return true
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (ActivityCompat.checkSelfPermission(this!!, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(
                     arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
                     STORAGE_PERMISSION_CODE
@@ -663,8 +664,32 @@ class MainActivity : AppCompatActivity() {
         return true
     }
 
-    /* run native executable */
+    /* try to rune exec */
     fun run() {
+        hasWriteStoragePermission()
+        val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+        if (dir.canWrite()) {
+            init_app()
+            return
+        }
+        val tim = Timer()
+        tim.scheduleAtFixedRate(object : TimerTask() {
+            override fun run() {
+                Handler(mainLooper).postDelayed(
+                    {
+                        if (dir.canWrite()) {
+                            tim.cancel()
+                            init_app()
+                        } else {
+                            addtxt("Missing write permission to Download/ folder.\n")
+                        }
+                    }, 0.toLong())
+            }
+        }, 1000, 1000)
+    }
+
+    /* copy files and run native executable */
+    fun init_app() {
         val s = applicationContext.applicationInfo.nativeLibraryDir
 
         hasWriteStoragePermission()
@@ -672,6 +697,7 @@ class MainActivity : AppCompatActivity() {
         val c = "$s/libbios.so"
         //val dir = File(p);
         val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+
         try {
             val file = File(dir, "hi.txt")
             if (!file.exists()) {
@@ -687,6 +713,7 @@ class MainActivity : AppCompatActivity() {
                 output.close()
             }
         } catch (e: Exception) {
+            //
         }
 
         try {
@@ -704,14 +731,18 @@ class MainActivity : AppCompatActivity() {
                 output.close()
             }
         } catch (e: Exception) {
+            //
         }
-        c.runCommand(dir)
+
+        if (dir.canWrite()) {
+            c.runCommand(dir)
+        }
     }
 
+
     /* excecute system command */
-    fun String.runCommand(workingDir: File): String? {
+    fun String.runCommand(workingDir: File): String {
         try {
-            val own = applicationContext.applicationInfo.nativeLibraryDir
            proc = Runtime.getRuntime().exec(
                 arrayOf<String> (this), //, "$own/lib%s.so", workingDir.absolutePath),
                 Os.environ(), workingDir)
