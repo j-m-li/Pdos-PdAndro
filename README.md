@@ -13,9 +13,9 @@ After message "please enter a command" enter: ``pcomm.arm``
 
 After message "welcome to pcomm, enter a command" enter: ``type hi.txt``
 
-It will display the content of hi.txt
+It will display the content of ``hi.txt``
 
-Then to close the app, enter: exit
+Then to close the app, enter: ``exit``
 
 
 ![screen](doc/screen.jpg)
