@@ -667,21 +667,19 @@ class MainActivity : AppCompatActivity() {
     /* try to rune exec */
     fun run() {
         hasWriteStoragePermission()
-        val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        if (dir.canWrite()) {
-            init_app()
-            return
-        }
         val tim = Timer()
         tim.scheduleAtFixedRate(object : TimerTask() {
             override fun run() {
                 Handler(mainLooper).postDelayed(
                     {
+                        val ex = Environment.getExternalStorageDirectory().absolutePath
+                        val dir = File("$ex/Download")
                         if (dir.canWrite()) {
+                            addtxt("running in $dir\n")
                             tim.cancel()
-                            init_app()
+                            init_app(dir)
                         } else {
-                            addtxt("Missing write permission to Download/ folder.\n")
+                            addtxt("$dir missing permission!\n")
                         }
                     }, 0.toLong())
             }
@@ -689,14 +687,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     /* copy files and run native executable */
-    fun init_app() {
+    fun init_app(dir: File) {
         val s = applicationContext.applicationInfo.nativeLibraryDir
-
-        hasWriteStoragePermission()
-
         val c = "$s/libbios.so"
-        //val dir = File(p);
-        val dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
 
         try {
             val file = File(dir, "hi.txt")
