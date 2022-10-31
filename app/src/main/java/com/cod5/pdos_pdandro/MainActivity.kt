@@ -674,7 +674,14 @@ class MainActivity : AppCompatActivity() {
                     {
                         val ex = Environment.getExternalStorageDirectory().absolutePath
                         val dir = File("$ex/Download")
-                        if (dir.canWrite()) {
+                        try {
+                            if (!dir.exists()) {
+                                dir.mkdir()
+                            }
+                        } catch (e: Exception) {
+                            //
+                        }
+                        if (dir.isDirectory && dir.canWrite()) {
                             addtxt("running in $dir\n")
                             tim.cancel()
                             init_app(dir)
@@ -689,7 +696,8 @@ class MainActivity : AppCompatActivity() {
     /* copy files and run native executable */
     fun init_app(dir: File) {
         val s = applicationContext.applicationInfo.nativeLibraryDir
-        val c = "$s/libbios.so"
+        val c = "$s/libpdos.so"
+
 
         try {
             val file = File(dir, "hi.txt")
@@ -733,11 +741,13 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    /* excecute system command */
+    /* execute system command */
     fun String.runCommand(workingDir: File): String {
         try {
-           proc = Runtime.getRuntime().exec(
-                arrayOf<String> (this), //, "$own/lib%s.so", workingDir.absolutePath),
+            val own = applicationContext.applicationInfo.nativeLibraryDir
+
+            proc = Runtime.getRuntime().exec(
+                arrayOf<String> (this, "$own/lib%s.so", workingDir.absolutePath),
                 Os.environ(), workingDir)
             wri = proc.outputStream.writer()
             return ""

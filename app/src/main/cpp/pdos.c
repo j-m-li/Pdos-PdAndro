@@ -43,6 +43,7 @@ int run(char *cmd, char *arg1)
     out = dup(1);
     if (pid == 0) {;
         execv(args[0], args);
+        write(STDOUT_FILENO, "!exe\n", 5);
         exit(-1);
     } else {
         waitpid(pid, &status, 0);
@@ -119,7 +120,7 @@ int main(int argc, char *argv[])
                     if (n > 0) {
                         if (!strcmp(cmd, "exit")) {
                             exit(0);
-                        } else if (!strcmp(cmd, "echo")) {
+                        } else if (!strcmp(cmd, "test1")) {
                             prompt = "\x1b[A\r\x1b[K\x1b[1;32mopened \x1b[1;4;34m%s\x1b[0;1;32m in your browser.\x1b[0m\n\x1b[1;1H";
                             write(STDOUT_FILENO, prompt, strlen(prompt));
                         } else if (!strcmp(cmd, "LS")) {
@@ -127,15 +128,6 @@ int main(int argc, char *argv[])
                             run(cmd, NULL/*argv[2]*/);
                         } else if (!strcmp(cmd, "bios")) {
                             snprintf(cmd, sizeof(cmd), argv[1], "bios");
-                            run(cmd, NULL);
-                        } else if (!strcmp(cmd, "test1")) {
-                            snprintf(cmd, sizeof(cmd), argv[1], "test1");
-                            run(cmd, NULL);
-                        } else if (!strcmp(cmd, "test2")) {
-                            snprintf(cmd, sizeof(cmd), argv[1], "test2");
-                            run(cmd, NULL);
-                        } else if (!strcmp(cmd, "test3")) {
-                            snprintf(cmd, sizeof(cmd), argv[1], "test3");
                             run(cmd, NULL);
                         } else {
                             system(cmd);
