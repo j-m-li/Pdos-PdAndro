@@ -99,7 +99,9 @@ int main(int argc, char *argv[])
         write(STDOUT_FILENO, "\n\n", 2);
         write(STDOUT_FILENO, argv[2], strlen(argv[2]));
     }
-    write(STDOUT_FILENO, "\nprompt> ", 8);
+    prompt = "\nEnter \"bios\" to start PDOS.\nprompt>";
+    write(STDOUT_FILENO, prompt, strlen(prompt));
+    prompt = NULL;
     old_mode = fcntl(STDIN_FILENO, F_GETFL);
     new_mode = old_mode | O_NONBLOCK;
     fcntl(STDIN_FILENO, F_SETFL, new_mode);
