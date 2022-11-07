@@ -17,6 +17,8 @@ After message "welcome to pcomm, enter a command" enter: ``type hi.txt``
 
 It will display the content of ``hi.txt``
 
+Other available commands are : ``dir``, ``date``, ``time``, ``copy``, ``cd``, ``md``, ``rd``, ``del``... 
+
 Then to close the app, enter: ``exit``
 
 
