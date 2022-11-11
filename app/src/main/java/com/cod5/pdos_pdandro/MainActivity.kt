@@ -700,9 +700,9 @@ class MainActivity : AppCompatActivity() {
 
 
         try {
-            val file = File(dir, "hi.txt")
+            val file = File(dir, "pdos.arm")
             if (!file.exists()) {
-                val input = resources.openRawResource(R.raw.hi)
+                val input = resources.openRawResource(R.raw.pdos)
                 val output = FileOutputStream(file)
                 val buffer = ByteArray(4096)
                 var rd = input.read(buffer)
@@ -718,9 +718,27 @@ class MainActivity : AppCompatActivity() {
         }
 
         try {
-            val file = File(dir, "pcomm.arm")
+            val file = File(dir, "pcomm.exe")
             if (!file.exists()) {
                 val input = resources.openRawResource(R.raw.pcomm)
+                val output = FileOutputStream(file)
+                val buffer = ByteArray(4096)
+                var rd = input.read(buffer)
+                while (rd > 0) {
+                    output.write(buffer, 0, rd)
+                    rd = input.read(buffer)
+                }
+                input.close()
+                output.close()
+            }
+        } catch (e: Exception) {
+            //
+        }
+
+        try {
+            val file = File(dir, "uc8086.vhd")
+            if (!file.exists()) {
+                val input = resources.openRawResource(R.raw.uc8086)
                 val output = FileOutputStream(file)
                 val buffer = ByteArray(4096)
                 var rd = input.read(buffer)

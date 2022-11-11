@@ -62,6 +62,7 @@ int main(int argc, char *argv[])
     FILE *fp = stdin;
     int fd = STDIN_FILENO;
     char cmd[1024];
+    char b[1024];
     char *prompt = NULL;
 #if 0 // amd64 in RAM execution test
 /*    char assembly[] = {0x48, 0xc7, 0xc0, 0x10, 0x00, 0x00, 0x00, //          movq    $16, %rax
@@ -99,6 +100,14 @@ int main(int argc, char *argv[])
         write(STDOUT_FILENO, "\n\n", 2);
         write(STDOUT_FILENO, argv[2], strlen(argv[2]));
     }
+
+    sleep(2);
+    snprintf(b, sizeof(b), argv[1], "bios");
+    snprintf(cmd, sizeof(cmd), "%s pdos.arm uc8086.vhd", b);
+    system(cmd);
+    getchar();
+    return 0;
+
     prompt = "\nEnter \"bios\" to start PDOS.\nprompt>";
     write(STDOUT_FILENO, prompt, strlen(prompt));
     prompt = NULL;
