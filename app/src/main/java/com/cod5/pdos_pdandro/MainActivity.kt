@@ -700,7 +700,7 @@ class MainActivity : AppCompatActivity() {
 
 
         try {
-            val file = File(dir, "pdos.arm")
+            val file = File(dir, "pdos.exe")
             if (!file.exists()) {
                 val input = resources.openRawResource(R.raw.pdos)
                 val output = FileOutputStream(file)

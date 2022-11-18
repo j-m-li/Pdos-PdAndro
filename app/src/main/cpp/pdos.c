@@ -103,9 +103,9 @@ int main(int argc, char *argv[])
 
     sleep(2);
     snprintf(b, sizeof(b), argv[1], "bios");
-    snprintf(cmd, sizeof(cmd), "%s pdos.arm uc8086.vhd", b);
+    snprintf(cmd, sizeof(cmd), "%s", b);
     system(cmd);
-    getchar();
+    sleep(1);
     return 0;
 
     prompt = "\nEnter \"bios\" to start PDOS.\nprompt>";
