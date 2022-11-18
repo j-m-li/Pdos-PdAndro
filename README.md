@@ -9,17 +9,7 @@ This app will create 2 files in your "Download/" folder (hi.txt and pcomm.arm)
 
 ## How to use it
 
-Enter : ``bios``
-
-After message "please enter a command" enter: ``pcomm.arm``
-
-After message "welcome to pcomm, enter a command" enter: ``type hi.txt``
-
-It will display the content of ``hi.txt``
-
-Other available commands are : ``dir``, ``date``, ``time``, ``copy``, ``cd``, ``md``, ``rd``, ``del``... 
-
-Then to close the app, enter: ``exit``
+After message "please enter a command" enter: ``pcomm.exe``
 
 
 ![screen](doc/screen.jpg)
