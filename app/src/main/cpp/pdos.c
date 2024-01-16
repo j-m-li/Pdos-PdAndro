@@ -91,7 +91,24 @@ int main(int argc, char *argv[]) {
 #endif
 
     sleep(1);
+    
+    if (argc > 1) {
+        write(STDOUT_FILENO, argv[1], strlen(argv[1]));
+    }
+    if (argc > 2) {
+        write(STDOUT_FILENO, "\n\n", 2);
+        write(STDOUT_FILENO, argv[2], strlen(argv[2]));
+    }
+    
+    write(STDOUT_FILENO, "\n", 1);
+    sleep(2);
+    snprintf(b, sizeof(b), argv[1], "bios");
+    snprintf(cmd, sizeof(cmd), "%s", b);
+    system(cmd);
+    sleep(1);
+    return 0;
 
+#if     0
     if (argc > 1) {
         write(STDOUT_FILENO, argv[1], strlen(argv[1]));
     }
@@ -139,6 +156,9 @@ int main(int argc, char *argv[]) {
                         } else if (!strcmp(cmd, "bios.exe")) {
                             snprintf(cmd, sizeof(cmd), argv[1], "bios");
                             run(cmd, NULL);
+                        } else if (!strcmp(cmd, "pcomm.exe")) {
+                            snprintf(cmd, sizeof(cmd), argv[1], "pcomm");
+                            run(cmd, NULL);
                         } else {
                             system(cmd);
                         }
@@ -146,6 +166,8 @@ int main(int argc, char *argv[]) {
 
                     prompt ="prompt>";
                     n = 0;
+                } else if (buf[i] == 0x08) {
+                	buf[n--] = '\0';
                 } else {
                     if (n < (sizeof(cmd) - 2)) {
                         cmd[n] = buf[i];
@@ -165,4 +187,5 @@ int main(int argc, char *argv[]) {
         }
     }
     return 0;
+#endif
 }

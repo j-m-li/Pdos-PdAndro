@@ -6,6 +6,7 @@
 package com.cod5.pdos_pdandro
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.*
 import android.os.Build
@@ -15,20 +16,30 @@ import android.os.Handler
 import android.system.Os
 import android.util.DisplayMetrics
 import android.view.KeyEvent
+import android.view.View
+import android.view.View.OnClickListener
+import android.view.WindowManager
+import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.cod5.pdos_pdandro.databinding.ActivityMainBinding
+import java.io.BufferedInputStream
+import java.io.BufferedReader
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
+import java.io.InputStream
 import java.io.OutputStreamWriter
+import java.nio.file.Files
+import java.nio.file.OpenOption
 import java.util.*
 import kotlin.math.ceil
 import kotlin.system.exitProcess
 
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), OnClickListener {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var bitmap: Bitmap
@@ -50,6 +61,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var proc: Process
     private lateinit var wri: OutputStreamWriter
     private var input_buf = ""
+    private lateinit var imm: InputMethodManager
 
     companion object {
         private const val STORAGE_PERMISSION_CODE = 101
@@ -207,6 +219,12 @@ class MainActivity : AppCompatActivity() {
         }, 1000, 20)
     }
 
+    override fun onClick(p0: View?) {
+        if (getCurrentFocus() == null && !imm.isAcceptingText) {
+            imm.toggleSoftInputFromWindow(p0?.windowToken, WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN, 0)
+        }
+    }
+
     /* called when the activity starts */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -214,6 +232,17 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         supportActionBar?.hide()
+
+        imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        binding.imageView?.setOnClickListener(this)
+
+        binding.imageView?.setOnKeyListener { view, i, keyEvent ->
+            if (keyEvent.action == KeyEvent.ACTION_DOWN) {
+                onKeyDown(keyEvent.keyCode, keyEvent)
+            }
+            return@setOnKeyListener true
+        }
+
         run()
         run_timer()
         init_display()
@@ -693,16 +722,45 @@ class MainActivity : AppCompatActivity() {
         }, 1000, 1000)
     }
 
+    private fun isEqual(is1: InputStream, is2: InputStream) : Boolean {
+        is1.use { src ->
+            is2.use { dest ->
+                var ch : Int
+                while (src.read().also { ch = it } != -1) {
+                    if (ch != dest.read()) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
     /* copy files and run native executable */
     fun init_app(dir: File) {
         val s = applicationContext.applicationInfo.nativeLibraryDir
         val c = "$s/libpdos.so"
 
-
-        try {
+        /*try {
             val file = File(dir, "pdos.exe")
+
+            if (file.exists()) {
+                val abi = Build.SUPPORTED_ABIS[0]
+                val temp1 = resources.assets.open("$abi/pdos.exe")
+                val temp2 = FileInputStream(file)
+
+                if (!isEqual(temp1, temp2)) {
+                    android.util.Log.i(javaClass.name, "Resource file has changed")
+                    file.delete();
+                }
+
+                temp1.close()
+                temp2.close()
+            }
+
             if (!file.exists()) {
-                val input = resources.openRawResource(R.raw.pdos)
+                val abi = Build.SUPPORTED_ABIS[0]
+                val input = resources.assets.open("$abi/pdos.exe")
                 val output = FileOutputStream(file)
                 val buffer = ByteArray(4096)
                 var rd = input.read(buffer)
@@ -719,8 +777,24 @@ class MainActivity : AppCompatActivity() {
 
         try {
             val file = File(dir, "pcomm.exe")
+
+            if (file.exists()) {
+                val abi = Build.SUPPORTED_ABIS[0]
+                val temp1 = resources.assets.open("$abi/pcomm.exe")
+                val temp2 = FileInputStream(file)
+
+                if (!isEqual(temp1, temp2)) {
+                    android.util.Log.i(javaClass.name, "Resource file has changed")
+                    file.delete();
+                }
+
+                temp1.close()
+                temp2.close()
+            }
+
             if (!file.exists()) {
-                val input = resources.openRawResource(R.raw.pcomm)
+                val abi = Build.SUPPORTED_ABIS[0]
+                val input = resources.assets.open("$abi/pcomm.exe")
                 val output = FileOutputStream(file)
                 val buffer = ByteArray(4096)
                 var rd = input.read(buffer)
@@ -751,7 +825,7 @@ class MainActivity : AppCompatActivity() {
             }
         } catch (e: Exception) {
             //
-        }
+        }*/
 
         if (dir.canWrite()) {
             c.runCommand(dir)
