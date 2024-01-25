@@ -711,7 +711,7 @@ class MainActivity : AppCompatActivity(), OnClickListener {
                             //
                         }
                         if (dir.isDirectory && dir.canWrite()) {
-                            addtxt("running in $dir\n")
+                            addtxt(System.getProperty("os.arch", "?") + " running in $dir\n")
                             tim.cancel()
                             init_app(dir)
                         } else {
