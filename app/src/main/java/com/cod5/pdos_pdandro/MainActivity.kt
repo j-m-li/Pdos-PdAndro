@@ -91,8 +91,8 @@ class MainActivity : AppCompatActivity(), OnClickListener {
             decoration = model.decoration
         }
         fun reset() {
-            color = Color.BLACK
-            bgcolor = Color.WHITE
+            color = Color.WHITE
+            bgcolor = Color.BLACK
             typeface = normal
             decoration = ""
         }
@@ -166,10 +166,20 @@ class MainActivity : AppCompatActivity(), OnClickListener {
             // https://sourceforge.net/p/pdos/gitcode/ci/master/tree/src/pdos.c#l1764
             KeyEvent.KEYCODE_DPAD_UP -> "\u001b[A"
             KeyEvent.KEYCODE_DPAD_DOWN -> "\u001b[B"
-            KeyEvent.KEYCODE_DPAD_RIGHT -> "\u001b[C"
-            KeyEvent.KEYCODE_DPAD_LEFT -> "\u001b[D"
-            KeyEvent.KEYCODE_CTRL_LEFT -> "\u001b[1;5;D"
-            KeyEvent.KEYCODE_CTRL_RIGHT -> "\u001b[1;5;C"
+            KeyEvent.KEYCODE_DPAD_RIGHT -> {
+                if (event.isCtrlPressed) {
+                    "\u001b[1;5C"
+                } else {
+                    "\u001b[C"
+                }
+            }
+            KeyEvent.KEYCODE_DPAD_LEFT -> {
+                if (event.isCtrlPressed) {
+                    "\u001b[1;5D"
+                } else {
+                    "\u001b[D"
+                }
+            }
             KeyEvent.KEYCODE_INSERT -> "\u001b[2~"
             KeyEvent.KEYCODE_FORWARD_DEL -> "\u001b[3~"
             KeyEvent.KEYCODE_MOVE_HOME -> "\u001b[1~"
@@ -194,6 +204,11 @@ class MainActivity : AppCompatActivity(), OnClickListener {
             if (keyCode >= KeyEvent.KEYCODE_A && keyCode <= KeyEvent.KEYCODE_Z) {
                 s = (keyCode - KeyEvent.KEYCODE_A + 'a'.code).toChar().toString()
                 s = "\u001b$s"
+            }
+        }
+        if (s.length == 0 && event.isCtrlPressed) {
+            if (keyCode >= KeyEvent.KEYCODE_A && keyCode <= KeyEvent.KEYCODE_Z) {
+                s = (keyCode - KeyEvent.KEYCODE_A + 1).toChar().toString()
             }
         }
         if (s.length == 0) {
