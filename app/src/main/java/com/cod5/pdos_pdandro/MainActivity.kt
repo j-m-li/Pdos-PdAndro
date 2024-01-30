@@ -7,12 +7,15 @@ package com.cod5.pdos_pdandro
 
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.*
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.os.Handler
+import android.provider.Settings
 import android.system.Os
 import android.util.DisplayMetrics
 import android.view.KeyEvent
@@ -21,6 +24,7 @@ import android.view.View.OnClickListener
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.cod5.pdos_pdandro.databinding.ActivityMainBinding
@@ -676,6 +680,34 @@ class MainActivity : AppCompatActivity(), OnClickListener {
             }
         }
     }
+    private fun askAllFilesPermission(): Boolean {
+        if (Build.VERSION.SDK_INT >= 30) {
+            if (hasAllFilesPermission()) {
+                return true
+            }
+
+            val uri = Uri.parse("package:${BuildConfig.APPLICATION_ID}")
+
+            startActivity(
+                Intent(
+                    Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+                    uri
+                )
+            )
+         }
+        return true
+    }
+
+
+
+    @RequiresApi(Build.VERSION_CODES.R)
+    private fun hasAllFilesPermission(): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            return Environment.isExternalStorageManager()
+        }
+        return true
+    }
+
 
     /* asks for read/write permission on Download directory */
     private fun hasWriteStoragePermission(): Boolean {
@@ -696,6 +728,7 @@ class MainActivity : AppCompatActivity(), OnClickListener {
     /* try to rune exec */
     fun run() {
         hasWriteStoragePermission()
+        askAllFilesPermission();
         val tim = Timer()
         tim.scheduleAtFixedRate(object : TimerTask() {
             override fun run() {

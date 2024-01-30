@@ -9,6 +9,10 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/bios/${ANDROID_ABI})
 #add_subdirectory(${CMAKE_SOURCE_DIR}/pcomm/${ANDROID_ABI})
 endif()
 
+if (${ANDROID_ABI} STREQUAL "arm64-v8a")
+    add_subdirectory(${CMAKE_SOURCE_DIR}/bios/${ANDROID_ABI})
+endif()
+
 add_executable(
         libpdos.so
 
