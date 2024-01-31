@@ -396,12 +396,12 @@ class MainActivity : AppCompatActivity(), OnClickListener {
         while (r <= end_row) {
             val row = rows[r]
             var c = 0
-            val ec = 79
+            var ec = 79
             if (r == start_row ) {
                 c = start_col
             }
             if (r == end_row) {
-                c = end_col
+                ec = end_col
             }
             while (c <= ec) {
                 row[c].txt = "" // TODO
