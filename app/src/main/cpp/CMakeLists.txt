@@ -9,9 +9,11 @@ add_subdirectory(${CMAKE_SOURCE_DIR}/bios/${ANDROID_ABI})
 #add_subdirectory(${CMAKE_SOURCE_DIR}/pcomm/${ANDROID_ABI})
 endif()
 
-if (${ANDROID_ABI} STREQUAL "arm64-v8a")
+if (${ANDROID_ABI} STREQUAL "arm64-v8a" OR ${ANDROID_ABI} STREQUAL "x86_64")
     add_subdirectory(${CMAKE_SOURCE_DIR}/bios/${ANDROID_ABI})
 endif()
+
+enable_language(C)
 
 add_executable(
         libpdos.so
@@ -23,7 +25,7 @@ add_executable(
 
         ls.c)
 
-add_executable(libtest.so
-        IMPORTED
-        )
 
+#add_executable(libtest.so
+#        IMPORTED
+#        )

@@ -5,15 +5,15 @@ plugins {
 
 android {
     namespace 'com.cod5.pdos_pdandro'
-    compileSdk 33
+    compileSdk 34
 
     defaultConfig {
         applicationId "com.cod5.pdos_pdandro"
         minSdk 21
-        targetSdk 33
+        targetSdk 34
         versionCode 1
         versionName "1.0"
-        ndk.abiFilters 'armeabi-v7a', 'x86'
+        ndk.abiFilters 'armeabi-v7a', 'x86', 'x86_64'
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 

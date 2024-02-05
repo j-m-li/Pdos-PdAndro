@@ -37,7 +37,7 @@ int run(char *cmd, char *arg1)
     args[1] = arg1;
     args[2] = NULL;
 
-    fcntl(STDIN_FILENO, F_SETFL, old_mode);
+    //fcntl(STDIN_FILENO, F_SETFL, old_mode);
     pid = fork();
     in = dup(0);
     out = dup(1);
@@ -49,7 +49,7 @@ int run(char *cmd, char *arg1)
         waitpid(pid, &status, 0);
         dup2(in, 0);
         dup2(out, 1);
-        fcntl(STDIN_FILENO, F_SETFL, new_mode);
+        //fcntl(STDIN_FILENO, F_SETFL, new_mode);
    }
 
     return status;
@@ -104,6 +104,9 @@ int main(int argc, char *argv[]) {
     sleep(2);
     snprintf(b, sizeof(b), argv[1], "bios");
     snprintf(cmd, sizeof(cmd), "%s", b);
+    //printf("'''%s'''", cmd);
+    //fsync(STDOUT_FILENO);
+    //run(cmd, "");
     system(cmd);
     sleep(1);
     return 0;
