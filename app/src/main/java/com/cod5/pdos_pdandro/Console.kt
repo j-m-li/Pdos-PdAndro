@@ -98,7 +98,7 @@ companion object{
     // https://en.wikipedia.org/wiki/ANSI_escape_code
     fun sgr() {
         var f = 0
-        if (escape_args.size > 1) {
+        if (escape_args.size > 0) {
             f = escape_args[0]
         }
         if (f == 0) {
